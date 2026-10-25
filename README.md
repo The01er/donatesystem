@@ -98,6 +98,10 @@ cd packages/plugin-minecraft
 
 Готовый JAR кладётся в `plugins/` сервера. В `config.yml` укажите `api-url` и `api-token` (токен создаётся в кабинете сервера).
 
+## Развёртывание за Caddy
+
+Пример настройки HTTPS, reverse proxy, wildcard-доменов магазинов и on-demand TLS — в [docs/caddy.md](docs/caddy.md).
+
 ## Безопасность
 
 - Никогда не коммитьте `.env`, бэкапы БД, `uploads/` и ключи — они исключены в `.gitignore`.
