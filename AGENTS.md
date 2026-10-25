@@ -26,7 +26,7 @@ SaaS-платформа приёма донатов на серверах Minecr
 ## Структура
 
 ```
-/home/donate/
+/opt/donatesystem/
 ├── packages/
 │   ├── api/              # Fastify backend
 │   │   ├── prisma/schema.prisma

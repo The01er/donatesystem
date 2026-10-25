@@ -4,7 +4,7 @@ set -e
 # Production start — запускает собранные артефакты без tsx/nuxt dev
 # Вызывается из systemd или вручную
 
-cd /home/donate
+cd "$(dirname "$0")/.."
 
 echo "[prod] Starting API from dist..."
 node packages/api/dist/index.js &

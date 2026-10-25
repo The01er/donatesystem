@@ -28,7 +28,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @donate/api exec tsx src/index.ts',
       port: 3001,
-      cwd: '/home/donate',
+      cwd: process.cwd(),
       reuseExistingServer: false,
       timeout: 30_000,
       env: {
@@ -50,7 +50,7 @@ export default defineConfig({
     {
       command: 'pnpm --filter @donate/web exec nuxi dev --port 3000',
       port: 3000,
-      cwd: '/home/donate',
+      cwd: process.cwd(),
       reuseExistingServer: false,
       timeout: 30_000,
       env: {

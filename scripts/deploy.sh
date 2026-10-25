@@ -6,7 +6,7 @@
 set -e
 
 PROD_TARGET="${1:-donate@example.com}"
-PROD_DIR="/home/donate"
+PROD_DIR="${PROD_DIR:-/opt/donatesystem}"
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "=== 1. Сборка ==="
@@ -58,9 +58,9 @@ rsync -avz --delete \
 
 echo ""
 echo "=== 4. Установка зависимостей на проде ==="
-ssh "$PROD_TARGET" << 'REMOTE'
+ssh "$PROD_TARGET" << REMOTE
   set -e
-  cd /home/donate
+  cd "$PROD_DIR"
   echo "  Установка production-зависимостей..."
   pnpm install --prod --frozen-lockfile 2>/dev/null || pnpm install --prod
   echo "  Prisma generate..."

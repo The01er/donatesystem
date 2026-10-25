@@ -11,6 +11,7 @@ import { RevokeStatus } from '../constants/revoke-status.js';
 import { checkSubscriptionExpiry, chargeSubscription, refundSubscriptionTx } from '../services/subscription-service.js';
 import { invalidateShopCache } from '../plugins/cache.js';
 import { getOperatingMode } from '../lib/platform-settings.js';
+import { config } from '../config.js';
 import { encryptSecret } from '../lib/crypto.js';
 import { revokeOrderTx, reGrantOrderTx, cancelOrderTx } from '../services/order-service.js';
 import { getAdapter } from '../adapters/registry.js';
@@ -371,7 +372,7 @@ export default async function serverRoutes(app: FastifyInstance) {
           .send({ error: 'Cannot delete server with active orders. Complete or cancel them first.' });
       }
 
-      const uploadDir = join('/home/donate/uploads', serverId);
+      const uploadDir = join(config.uploadsDir, serverId);
       if (existsSync(uploadDir)) {
         rmSync(uploadDir, { recursive: true, force: true });
       }
@@ -480,7 +481,7 @@ export default async function serverRoutes(app: FastifyInstance) {
     const safeExt = ['.png', '.jpg', '.jpeg', '.webp'].includes(ext) ? ext : '.png';
     const fileName = `${type}${safeExt}`;
 
-    const serverDir = join('/home/donate/uploads', serverId);
+    const serverDir = join(config.uploadsDir, serverId);
     if (!existsSync(serverDir)) {
       mkdirSync(serverDir, { recursive: true });
     }
@@ -556,7 +557,7 @@ export default async function serverRoutes(app: FastifyInstance) {
       const server = await ownServer(userId, serverId);
       if (!server) return reply.status(404).send({ error: 'Not found' });
 
-      const serverDir = join('/home/donate/uploads', serverId);
+      const serverDir = join(config.uploadsDir, serverId);
       for (const ext of ['.png', '.jpg', '.jpeg', '.webp']) {
         await deleteFile(serverDir, `logo${ext}`);
       }
@@ -575,7 +576,7 @@ export default async function serverRoutes(app: FastifyInstance) {
       const server = await ownServer(userId, serverId);
       if (!server) return reply.status(404).send({ error: 'Not found' });
 
-      const serverDir = join('/home/donate/uploads', serverId);
+      const serverDir = join(config.uploadsDir, serverId);
       for (const ext of ['.png', '.jpg', '.jpeg', '.webp']) {
         await deleteFile(serverDir, `cover${ext}`);
       }

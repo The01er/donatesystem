@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+
 function getJwtSecret(): string {
   if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
   if (process.env.NODE_ENV === 'production') {
@@ -18,7 +20,7 @@ export const config = {
   port: Number(process.env.PORT) || 3001,
   jwtSecret: getJwtSecret(),
   cookieSecret: getCookieSecret(),
-  uploadsDir: process.env.UPLOADS_DIR || '/home/donate/uploads',
+  uploadsDir: process.env.UPLOADS_DIR || join(process.cwd(), 'uploads'),
   sentryDsn: process.env.SENTRY_DSN || '',
   paymentWebhookSecret: process.env.PAYMENT_WEBHOOK_SECRET || '',
   paymentKeysEncryptionKey: process.env.PAYMENT_KEYS_ENCRYPTION_KEY || '',

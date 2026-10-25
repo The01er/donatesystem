@@ -6,6 +6,8 @@ import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { existsSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { config } from '../../src/config.js';
 import prisma from '../../src/plugins/prisma.js';
 import authPlugin from '../../src/plugins/auth.js';
@@ -35,7 +37,7 @@ export async function createTestApp(opts?: { noRateLimit?: boolean }) {
   }
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
 
-  const uploadsDir = '/home/donate/uploads';
+  const uploadsDir = join(tmpdir(), 'donate-test-uploads');
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir, { recursive: true });
   }

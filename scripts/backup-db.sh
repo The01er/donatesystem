@@ -1,6 +1,6 @@
 #!/bin/bash
 # Backup MariaDB + uploads + project files для DonatePlatform
-# Добавить в cron: 0 3 * * * /home/donate/scripts/backup-db.sh
+# Добавить в cron: 0 3 * * * /opt/donatesystem/scripts/backup-db.sh
 # Авторизация MySQL через ~/.my.cnf
 
 set -e
@@ -11,8 +11,9 @@ set -e
 # password=<ваш-пароль>
 
 DB_NAME="donate_platform"
-BACKUP_DIR="/home/donate/backups"
-PROJECT_DIR="/home/donate"
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_DIR="${PROJECT_DIR:-$SCRIPT_DIR}"
+BACKUP_DIR="${BACKUP_DIR:-$PROJECT_DIR/backups}"
 RETENTION_DAYS=7
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
 
