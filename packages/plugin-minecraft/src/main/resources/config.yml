@@ -1,0 +1,4 @@
+# DonatePlugin configuration
+api-url: 'http://localhost:3001'
+api-token: ''
+poll-interval: 5

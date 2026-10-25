@@ -1,0 +1,80 @@
+# DonatePlatform — Nginx config example
+# Скопировать в /etc/nginx/sites-available/example.com
+# ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
+
+upstream api {
+  server 127.0.0.1:3001;
+}
+
+upstream web {
+  server 127.0.0.1:3000;
+}
+
+server {
+  listen 80;
+  server_name example.com *.example.com;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl http2;
+  server_name example.com *.example.com;
+
+  # SSL (заменить на свои сертификаты)
+  ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+
+  # Security headers
+  add_header X-Frame-Options DENY;
+  add_header X-Content-Type-Options nosniff;
+  add_header X-XSS-Protection "1; mode=block";
+  add_header Referrer-Policy strict-origin-when-cross-origin;
+
+  # Gzip
+  gzip on;
+  gzip_types text/plain text/css application/json application/javascript text/xml image/svg+xml;
+  gzip_min_length 256;
+  gzip_vary on;
+
+  # Uploads (static)
+  location /uploads/ {
+    proxy_pass http://api;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # API (включая /docs, /api)
+  location / {
+    proxy_pass http://web;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+
+    # WebSocket support (HMR, tickets)
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    # Buffers
+    proxy_buffer_size 128k;
+    proxy_buffers 4 256k;
+    proxy_busy_buffers_size 256k;
+  }
+
+  # Rate limiting
+  limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+  location /api/ {
+    limit_req zone=api burst=20 nodelay;
+    proxy_pass http://api;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}

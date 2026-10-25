@@ -1,0 +1,608 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmailVerificationType {
+  email_verify
+  password_reset
+}
+
+// ── Enums ──────────────────────────────────────────────────
+
+enum PlatformRole {
+  SUPER_ADMIN
+  ADMIN
+  SUPPORT
+  FINANCE
+}
+
+enum OperatingMode {
+  self_employed
+  individual
+}
+
+enum SellerLegalStatus {
+  individual
+  self_employed
+  entrepreneur
+}
+
+enum PlanType {
+  commission
+  subscription
+}
+
+enum DiscountType {
+  percentage
+  fixed
+}
+
+enum SubscriptionStatus {
+  active
+  cancelled
+  expired
+}
+
+enum TicketStatus {
+  open
+  answered
+  closed
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+}
+
+enum ProductType {
+  item
+  privilege
+  currency
+  roulette
+  other
+}
+
+enum DepositStatus {
+  pending
+  completed
+  failed
+}
+
+// ── Models ─────────────────────────────────────────────────
+
+model User {
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  password            String
+  bannedAt            DateTime?
+  banReason           String?
+  onboardingCompleted Boolean            @default(false)
+  emailVerified       Boolean            @default(false)
+  balance             Decimal            @default(0) @db.Decimal(10,2)
+  legalStatus         SellerLegalStatus?
+  legalName           String?
+  inn                 String?
+  legalAddress        String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  servers             Server[]
+  serverMembers       ServerMember[]
+  platformStaff       PlatformStaff?
+  sessions            UserSession[]
+  emailVerifications  EmailVerification[]
+  deposits            Deposit[]
+  tickets             Ticket[]
+  ticketMessages      TicketMessage[]
+  auditLogs           AuditLog[]
+
+  @@index([email])
+  @@index([bannedAt])
+}
+
+model Deposit {
+  id             String         @id @default(uuid())
+  userId         String
+  amount         Decimal        @db.Decimal(10,2)
+  method         String
+  paymentProvider String?        // anypay | yookassa | enot | yoomoney | mock
+  status         DepositStatus  @default(pending)
+  transactionId  String? @unique
+  paymentUrl     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  user           User           @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model Server {
+  id                  String              @id @default(uuid())
+  name                String
+  gameType            String
+  ipAddress           String
+  slug                String              @unique
+  customDomain        String?             @unique
+  verifiedDns         Boolean             @default(false)
+  blockedAt           DateTime?
+  blockReason         String?
+  planType            PlanType            @default(commission)
+  upgradeEnabled      Boolean             @default(true)
+  upgradeMaxDays      Int                 @default(30)
+  upgradeMaxDiscount  Float               @default(0)
+  upgradeNoCoupon     Boolean             @default(false)
+  logoUrl             String?
+  coverUrl            String?
+  primaryColor        String              @default("indigo")
+  template            String              @default("classic")
+  showTopDonators     Boolean             @default(true)
+  showRecentPurchases Boolean             @default(true)
+  paymentKeys         Json?
+  rconHost            String?
+  rconPort            Int                 @default(25575)
+  rconPassword        String?
+  notificationConfig  Json?               @default("{}")
+  ownerId             String
+  owner               User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  products            Product[]
+  orders              Order[]
+  members             ServerMember[]
+  pluginTokens        ServerPluginToken[]
+  wallet              Wallet?
+  withdrawalRequests  WithdrawalRequest[]
+  coupons             Coupon[]
+  tickets             Ticket[]
+  subscription        Subscription?
+  legalDocuments      ServerLegalDocument[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([slug])
+  @@index([customDomain])
+  @@index([ownerId])
+  @@index([blockedAt])
+  @@index([planType])
+}
+
+model Subscription {
+  id          String             @id @default(uuid())
+  serverId    String             @unique
+  status      SubscriptionStatus @default(active)
+  price           Decimal            @default(9.99) @db.Decimal(10,2)
+  expiresAt       DateTime
+  chargedFrom     String?            // 'balance' | 'wallet'
+  transactionId   String?            @unique
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  server      Server             @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model Product {
+  id                    String      @id @default(uuid())
+  name                  String
+  description           String?
+  imageUrl              String?
+  price                 Decimal     @db.Decimal(10,2)
+  stock                 Int?
+  type                  ProductType @default(item)
+  command               String?     @db.Text
+  removeCommand         String?     @db.Text
+  actionsJson           String?     @db.Text
+  actionsSchemaVersion  String?     @default("v1")
+  serverId              String
+  server                Server      @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  orders                Order[]
+  deletedAt             DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([serverId])
+  @@index([stock])
+  @@index([type])
+  @@index([serverId, type])
+  @@index([serverId, stock])
+  @@index([serverId, deletedAt])
+}
+
+model Coupon {
+  id            String       @id @default(uuid())
+  serverId      String
+  code          String
+  discountType  DiscountType
+  discountValue Decimal  @db.Decimal(10,2)
+  usageLimit    Int?
+  usedCount     Int          @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  server        Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, code])
+  @@index([serverId])
+  @@index([code])
+}
+
+model Order {
+  id               String            @id @default(uuid())
+  playerName       String
+  email            String?
+  consent          Boolean           @default(false)
+  status           String            @default("pending") // pending | paid | delivering | delivered | failed | cancelled
+  totalAmount      Decimal           @default(0) @db.Decimal(10,2)
+  commissionPct    Float             @default(10.0)
+  commissionAmt    Decimal           @default(0) @db.Decimal(10,2)
+  ownerAmount      Decimal           @default(0) @db.Decimal(10,2)
+  upgrade          Boolean           @default(false)
+  paymentProvider  String?           // anypay | yookassa | enot | yoomoney | mock
+  planTypeAtCreation String?         // snapshot: 'commission' | 'subscription'
+  heartbeatAt      DateTime?
+  retryCount       Int               @default(0)
+  maxRetries       Int               @default(3)
+  lastError        String?
+  committedActions String?
+  couponCode       String?
+  revokeStatus     String?              // null | pending | revoked | failed
+  revokeCommand    String?     @db.Text
+  productId        String
+  product          Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  serverId         String
+  server           Server            @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  deliveryAttempts DeliveryAttempt[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([serverId])
+  @@index([status])
+  @@index([status, createdAt])
+  @@index([status, serverId])
+  @@index([createdAt])
+  @@index([couponCode])
+  @@index([playerName])
+  @@index([serverId, playerName])
+  @@index([status, heartbeatAt])
+  @@index([serverId, createdAt])
+  @@index([serverId, status, createdAt])
+  @@index([serverId, playerName, upgrade, status])
+  @@index([serverId, playerName, status])
+  @@index([serverId, revokeStatus])
+}
+
+model DeliveryAttempt {
+  id             String   @id @default(uuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actionIndex    Int
+  actionType     String
+  status         String   // executing | success | failed | rolled_back
+  error          String?
+  rollbackStatus String?  // null | pending | success | failed
+  createdAt      DateTime @default(now())
+
+  @@index([orderId])
+}
+
+model ServerPluginToken {
+  id        String    @id @default(uuid())
+  serverId  String
+  token     String    @unique
+  name      String    @default("Default")
+  isActive  Boolean   @default(true)
+  lastSeen  DateTime?
+  createdAt DateTime  @default(now())
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@index([serverId])
+  @@index([token])
+}
+
+model ServerMember {
+  id          String    @id @default(uuid())
+  serverId    String
+  userId      String
+  role        String    @default("moderator") // owner | admin | moderator
+  joinedAt    DateTime  @default(now())
+  server      Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, userId])
+  @@index([serverId])
+  @@index([userId])
+}
+
+model Wallet {
+  id               String               @id @default(uuid())
+  serverId         String               @unique
+  balance          Decimal              @default(0) @db.Decimal(10,2)
+  totalEarned      Decimal              @default(0) @db.Decimal(10,2)
+  server           Server               @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  transactions     Transaction[]
+  withdrawalRequests WithdrawalRequest[]
+
+  @@index([serverId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  walletId    String
+  amount      Decimal  @db.Decimal(10,2)
+  type        String   // order_commission | payout | refund | correction
+  orderId     String?
+  note        String?
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([walletId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model WithdrawalEvent {
+  id            String   @id @default(uuid())
+  withdrawalId  String
+  type          String   // 'rejected' | 'note_added'
+  adminId       String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  @@index([withdrawalId])
+}
+
+model WithdrawalRequest {
+  id          String   @id @default(uuid())
+  walletId    String
+  amount      Decimal  @db.Decimal(10,2)
+  method      String   // card | sbp | crypto
+  destination String
+  status      String   @default("pending") // pending | approved | rejected | paid
+  note        String?
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  serverId    String
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([walletId])
+  @@index([serverId])
+  @@index([status])
+  @@index([status, createdAt])
+  @@index([walletId, status, createdAt])
+  @@index([serverId, status, createdAt])
+}
+
+model PlatformStaff {
+  id        String       @id @default(uuid())
+  userId    String       @unique
+  role      PlatformRole @default(SUPPORT)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([role])
+}
+
+model PlatformSettings {
+  id                   String         @id @default("global")
+  defaultCommissionPct Float          @default(10.0)
+  subscriptionPrice    Decimal        @default(9.99) @db.Decimal(10,2)
+  currency             String         @default("RUB")
+  platformDomain       String         @default("example.com")
+  cnameTarget          String         @default("example.com")
+  operatingMode        OperatingMode  @default(self_employed)
+  brandName            String?
+  platformName         String?
+  platformInn          String?
+  platformOgrn         String?
+  platformAddress      String?
+  platformEmail        String?
+  platformPhone        String?
+
+  // Перенесено из .env
+  platformUrl          String?        @default("http://localhost:3000")
+  corsOrigins          String?        @default("http://localhost:3000")
+  paymentGateway       String?        @default("mock")
+  paymentWebhookUrl    String?        @default("http://localhost:3001/api/payment/webhook")
+  paymentWebhookIps    String?
+  yookassaShopId       String?
+  yookassaSecretKey    String?
+  anypayMerchantId     String?
+  anypaySecretKey      String?
+  enotShopId           String?
+  enotApiKey           String?
+  yoomoneyReceiver     String?
+  yoomoneySecret       String?
+  notificationProxy    String?
+  notificationRelayUrl String?
+  notificationRelayToken String?
+
+  // Cloudflare Turnstile
+  turnstileSiteKey   String?
+  turnstileSecretKey String?
+
+  // AI generation for guides
+  aiApiUrl           String?   @default("https://routerai.ru/api/v1/chat/completions")
+  aiApiKey           String?
+  aiModel            String?   @default("deepseek/deepseek-v4-flash")
+
+  updatedAt            DateTime       @updatedAt
+}
+
+model News {
+  id        String   @id @default(uuid())
+  title     String
+  content   String  @db.Text
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published])
+  @@index([createdAt])
+}
+
+model Faq {
+  id        String   @id @default(uuid())
+  question  String  @db.Text
+  answer    String  @db.Text
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+model UserSession {
+  id         String   @id @default(uuid())
+  userId     String
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([lastUsedAt])
+  @@index([userId, lastUsedAt])
+}
+
+model Ticket {
+  id        String       @id @default(uuid())
+  userId    String
+  serverId  String?
+  subject   String
+  status    TicketStatus @default(open)
+  priority  TicketPriority @default(medium)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server    Server?      @relation(fields: [serverId], references: [id], onDelete: SetNull)
+  messages  TicketMessage[]
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+  @@index([status])
+  @@index([updatedAt])
+}
+
+model EmailVerification {
+  id        String                @id @default(uuid())
+  userId    String
+  token     String                @unique
+  type      EmailVerificationType
+  expiresAt DateTime
+  createdAt DateTime              @default(now())
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PageView {
+  id        String   @id @default(uuid())
+  serverId  String?
+  ipHash    String
+  country   String?
+  city      String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([serverId, createdAt])
+  @@index([ipHash, serverId, createdAt])
+  @@index([createdAt])
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  ticketId  String
+  userId    String
+  message   String   @db.Text
+  isStaff   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  targetId  String?
+  amount    Decimal? @db.Decimal(10, 2)
+  reason    String?
+  ipAddress String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetId])
+}
+
+model Guide {
+  id              String   @id @default(uuid())
+  slug            String   @unique
+  title           String
+  content         String   @db.Text
+  excerpt         String?
+  imageUrl        String?
+  category        String   @default("general")
+  tags            String?
+  published       Boolean  @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([published])
+  @@index([category])
+  @@index([slug])
+  @@index([createdAt])
+}
+
+model LandingContent {
+  id        String   @id @default(uuid())
+  section   String   @unique
+  content   Json
+  updatedAt DateTime @updatedAt
+}
+
+model LegalDocument {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  content   String   @db.Text
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model ServerLegalDocument {
+  id        String   @id @default(uuid())
+  serverId  String
+  slug      String
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, slug])
+  @@index([serverId])
+}

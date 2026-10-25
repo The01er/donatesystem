@@ -1,0 +1,60 @@
+# DonatePlatform
+
+> SaaS-платформа для приёма донатов на серверах Minecraft. Владельцы серверов создают интернет-магазины с товарами (привилегии, предметы, валюта, рулетка), игроки покупают — товар выдается автоматически через RCON или Minecraft-плагин.
+
+## О платформе
+
+- **Кому подходит**: владельцам игровых серверов Minecraft (Java Edition)
+- **Модель**: подписка (ежемесячная оплата) или комиссия с каждой продажи
+- **Платёжные системы**: ЮKassa, AnyPay, Enot.io
+- **Юридический статус**: самозанятый (422-ФЗ) или ИП (УСН)
+- **Домены**: поддомен вида `{slug}.example.com` или собственный домен с CNAME/A-записью
+- **RCON**: прямая выдача товаров через RCON-протокол Minecraft
+- **Плагин**: Java-плагин для Paper/Bukkit (1.16.5+), опрос через API + heartbeat
+
+## Страницы сайта
+
+- [Главная](https://example.com/) — лендинг с описанием возможностей и тарифами
+- [Вход](https://example.com/login) — авторизация пользователей
+- [Регистрация](https://example.com/register) — создание аккаунта
+- [Новости](https://example.com/news) — новости платформы
+- [FAQ](https://example.com/faq) — часто задаваемые вопросы
+
+## Юридические документы
+
+- [Публичная оферта](https://example.com/legal/offer) — договор об оказании услуг (SaaS)
+- [Политика конфиденциальности](https://example.com/legal/privacy) — обработка персональных данных
+- [Пользовательское соглашение](https://example.com/legal/terms) — правила использования платформы
+
+## API
+
+Бэкенд на Fastify 5 + TypeScript + Prisma ORM (MariaDB). Все эндпоинты доступны по пути `/api/`. Аутентификация — JWT в httpOnly cookie.
+
+### Основные группы эндпоинтов
+
+- `POST /api/auth/login`, `/register`, `/logout` — аутентификация
+- `GET /api/auth/me` — текущий пользователь
+- `GET/POST/PATCH/DELETE /api/servers/:id` — управление серверами
+- `GET/POST/PATCH/DELETE /api/servers/:id/products` — товары магазина
+- `GET /api/shop/:slug` — публичные данные витрины
+- `POST /api/shop/:slug/order` — создание заказа
+- `POST /api/payment/webhook` — вебхук платёжных систем
+- `GET /api/plugin/orders`, `POST /api/plugin/orders/:id/complete` — API для плагина
+- `GET /api/admin/*` — административные эндпоинты
+
+## Технический стек
+
+| Компонент | Технология |
+|---|---|
+| Фронтенд | Nuxt 3 + Vue 3 + Pinia + Tailwind CSS |
+| Бэкенд | Fastify 5 + TypeScript + Zod |
+| База данных | MariaDB 10.11 через Prisma ORM |
+| Плагин Minecraft | Java 8, Paper API 1.16.5, OkHttp |
+| Прокси | Caddy 2.6 (SSL, wildcard + on-demand TLS) |
+
+## Optional
+
+- [Публичная оферта (продавцы → покупатели)](https://example.com/shop/{slug}/legal/store-offer) — пример оферты для магазина продавца
+- [Страница товаров в админке](https://example.com/dashboard/{id}/products) — создание и управление товарами
+- [Настройки RCON](https://example.com/dashboard/{id}/rcon) — подключение RCON к серверу Minecraft
+- [Уведомления](https://example.com/dashboard/{id}/notifications) — настройка Discord/Telegram уведомлений

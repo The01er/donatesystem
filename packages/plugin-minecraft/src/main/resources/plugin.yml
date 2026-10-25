@@ -1,0 +1,18 @@
+name: DonatePlugin
+version: 1.0.0
+main: ru.donateplatform.plugin.DonatePlugin
+api-version: 1.13
+softdepend: [Vault]
+description: DonatePlatform delivery plugin
+author: DonatePlatform
+
+commands:
+  donate:
+    description: DonatePlugin commands
+    usage: /donate reload
+    permission: donateplugin.reload
+
+permissions:
+  donateplugin.reload:
+    description: Reload DonatePlugin config
+    default: op

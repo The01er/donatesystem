@@ -1,0 +1,22 @@
+[Unit]
+Description=DonatePlatform notification relay
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root
+ExecStart=/usr/bin/node /root/notification-relay.mjs
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Укажи свой токен (тот же, что в .env основного сервера)
+Environment=RELAY_TOKEN=твой_секретный_токен
+Environment=PORT=3002
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+packages:
+  - 'packages/*'
+allowBuilds:
+  '@parcel/watcher': false
+  '@prisma/client': false
+  '@prisma/engines': false
+  '@sentry/cli': true
+  esbuild: false
+  prisma: false
+  vue-demi: true

@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+*.tsbuildinfo
+.output/
+
+# Nuxt
+.nuxt/
+.nitro/
+.nuxtrc
+
+# Prisma
+packages/api/prisma/*.db
+packages/api/prisma/*.db-journal
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+packages/**/.env
+*.pem
+*.key
+
+# Private infra (never commit)
+.ssh/
+.npm/
+.local/
+backups/
+mc-test/
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+.bash_logout
+.bashrc
+.profile
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache
+.cache/
+
+# E2E test report
+e2e-report/
+playwright-report/
+test-results/
+
+# Gradle build artifacts
+packages/plugin-minecraft/build/
+packages/plugin-minecraft/.gradle/
+
+# Temp/test files
+vitrina.html
